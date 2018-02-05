@@ -1,0 +1,7 @@
+
+05-02-2018 16:52:50:613 - I: 	Added Command DoNothingCommand for Player John
+05-02-2018 16:52:50:647 - I: 	Added Command DoNothingCommand for Player John
+05-02-2018 16:52:50:647 - D: 	Beginning round processing
+05-02-2018 16:52:50:647 - D: 	Processing Player Commands
+05-02-2018 16:52:50:647 - E: 	Failed to process command DoNothingCommand for player JohnGameEngine.Exceptions.InvalidCommandException: There was a problem during the placement of player's John ships (DoNothing), the round will be played over
+   at GameEngine.Engine.GameRoundProcessor.ProcessPlayerCommands() in C:\Development\Entelect Challenge\2017-Battleships\GameEngine\Battleships\GameEngine\Engine\GameRoundProcessor.cs:line 215

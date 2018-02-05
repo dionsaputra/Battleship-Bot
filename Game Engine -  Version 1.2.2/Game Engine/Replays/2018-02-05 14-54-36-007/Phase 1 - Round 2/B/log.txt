@@ -1,0 +1,10 @@
+
+05-02-2018 14:54:37:493 - I: 	The first round has failed due to a bot's ships not all being placed
+05-02-2018 14:54:37:825 - D: 	Executing bot with following commands ..\Reference Bots\C#\bin\Debug\ReferenceBot.exe B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 14-54-36-007\Phase 1 - Round 2\B"
+05-02-2018 14:54:37:825 - I: 	Executing process ..\Reference Bots\C#\bin\Debug\ReferenceBot.exe B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 14-54-36-007\Phase 1 - Round 2\B"
+05-02-2018 14:54:37:825 - E: 	Failure while executing bot ..\Reference Bots\C#\bin\Debug\ReferenceBot.exe B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 14-54-36-007\Phase 1 - Round 2\B"System.ComponentModel.Win32Exception (0x80004005): The system cannot find the file specified
+   at System.Diagnostics.Process.StartWithCreateProcess(ProcessStartInfo startInfo)
+   at System.Diagnostics.Process.Start()
+   at BotRunner.Util.ProcessHandler.StartProcessCommon() in C:\Development\Entelect Challenge\2017-Battleships\GameEngine\Battleships\BotRunner\Util\ProcessHandler.cs:line 87
+   at BotRunner.Util.ProcessHandler.RunProcess() in C:\Development\Entelect Challenge\2017-Battleships\GameEngine\Battleships\BotRunner\Util\ProcessHandler.cs:line 79
+   at TestHarness.TestHarnesses.Bot.BotRunner.RunBot() in C:\Development\Entelect Challenge\2017-Battleships\GameEngine\Battleships\BotRunner\Harness\Bot\BotRunner.cs:line 78
