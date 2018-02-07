@@ -1,8 +1,8 @@
 import sys
 
 size = 10
-board = [[0 for j in range(size)] for i in range(size)]
 ships=[['k1',2],['k2',3],['k3',3],['k4',4],['k5',5]]
+board = [[0 for j in range(size)] for i in range(size)]
 
 def delay():
 	for i in range(20000000):
@@ -16,10 +16,8 @@ def show_board():
 			else:
 				val = str(board[i][j])
 				if len(val) == 1:
-					val = '00'+val
-				elif len(val) == 2:
 					val = '0'+val
-
+				
 				print(val,end=' ')
 		print()
 	print()
@@ -33,11 +31,12 @@ def fill_prob(ship,pos,start,end,hor):
 				elif hor == 0 and board[i+j][pos] >= 0:
 					board[i+j][pos] += 1
 
-def update_prob_hunt():
+def calc_prob():
 	for i in range(size):
 		for j in range(size):
 			if board[i][j] != -1:
 				board[i][j] = 0	
+
 	# arah horizontal
 	for i in range(size):
 		j = 0
@@ -61,59 +60,119 @@ def update_prob_hunt():
 				fill_prob(ship,i,j,end,0)
 			j = end+2
 
-
-def update_prob_dest(point):
+def get_target():
+	maxRow = 0
+	maxCol = 0
 	for i in range(size):
 		for j in range(size):
-			if board[i][j] != -1:
-				board[i][j] = 0
-	for ship in ships:
-		shipLen = ship[1]
-		limStartHor = point[1]-shipLen+1 if point[1]-shipLen+1 >= 0 else 0
-		limEndHor = point[1]+shipLen-1 if point[1]+shipLen-1 <= size-1 else size-1
-		limStartVer = point[0]-shipLen+1 if point[0]-shipLen+1 >= 0 else 0
-		limEndVer = point[0]+shipLen-1 if point[0]+shipLen-1 <= size-1 else size-1
+			if board[i][j] > board[maxRow][maxCol]:
+				maxRow = i
+				maxCol = j
 
-		startHor = point[1]-1
-		while startHor >= limStartHor and board[point[0]][startHor] != -1:
-			startHor -= 1
-		startHor += 1
-	
-		endHor = point[1]+1
-		while endHor <= limEndHor and board[point[0]][endHor] != -1:
-			endHor += 1
-		endHor -= 1
+	return [maxRow,maxCol]
 
-		startVer = point[0]-1
-		while startVer >= limStartVer and board[startVer][point[1]] != -1:
-			startVer -= 1
-		startVer += 1
-
-		endVer = point[0]+1
-		while endVer <= limEndVer and board[endVer][point[1]] != -1:
-			endVer += 1
-		endVer -= 1
-
-		fill_prob(ship,point[0],startHor,endHor,1)
-		fill_prob(ship,point[1],startVer,endVer,0)
-
-update_prob_hunt()
-while True:
-	rowmax = 0
-	colmax = 0
-	maxval = board[rowmax][colmax]
-	for i in range(size):
-		for j in range(size):
-			if board[i][j] > maxval:
-				rowmax,colmax,maxval = i,j,board[i][j]
-	print("Shoot at ",[rowmax+1,colmax+1])
-	hit = input()
-	board[rowmax][colmax] = -1
-	if hit=='1':
-		print('hit')
-		update_prob_dest([rowmax,colmax])
-		show_board()
+def adj_cell(cp,direction):
+	if direction == 'L':
+		return [cp[0],cp[1]-1]
+	elif direction == 'U':
+		return [cp[0]-1,cp[1]]
+	elif direction == 'R':
+		return [cp[0],cp[1]+1]
 	else:
-		print('miss')
-		update_prob_hunt()
-		show_board()
+		return [cp[0]+1,cp[1]]
+
+def adj_value(cp,direction):
+	if direction == 'L':
+		return board[cp[0]][cp[1]-1]
+	elif direction == 'U':
+		return board[cp[0]-1][cp[1]]
+	elif direction == 'R':
+		return board[cp[0]][cp[1]+1]
+	else:
+		return board[cp[0]+1][cp[1]]
+
+def get_target_adj(cp): # cp adalah current point
+	if cp[0] == 0:
+		if cp[1] == 0:
+			if adj_value(cp,'D') > adj_value(cp,'R'):
+				return [adj_cell(cp,'D'),'D']
+			else:
+				return [adj_cell(cp,'R'),'R']
+		elif curPoint[1] == size-1:
+			if adj_value(cp,'L') > adj_value(cp,'D'):
+				return [adj_cell(cp,'L'),'L']
+			else:
+				return [adj_cell(cp,'D'),'D']
+		else:
+			if adj_value(cp,'L') > adj_value(cp,'D') and adj_value(cp,'L') > adj_value(cp,'R'):
+				return [adj_cell(cp,'L'),'L']
+			elif adj_value(cp,'D') > adj_value(cp,'L') and adj_value(cp,'D') > adj_value(cp,'R'):
+				return [adj_cell(cp,'D'),'D']
+			else:
+				return [adj_cell(cp,'R'),'R']
+	elif cp[0] == size-1:
+		if cp[1] == 0:
+			if adj_value(cp,'U') > adj_value(cp,'R'):
+				return [adj_cell(cp,'U'),'U']
+			else:
+				return [adj_cell(cp,'R'),'R']
+		elif cp[1] == size-1:
+			if adj_value(cp,'U') > adj_value(cp,'L'):
+				return [adj_cell(cp,'U'),'U']
+			else:
+				return [adj_cell(cp,'L'),'L']
+		else:
+			if adj_value(cp,'L') > adj_value(cp,'U') and adj_value(cp,'L') > adj_value(cp,'R'):
+				return [adj_cell(cp,'L'),'L']
+			elif adj_value(cp,'U') > adj_value(cp,'L') and adj_value(cp,'U') > adj_value(cp,'R'):
+				return [adj_cell(cp,'U'),'U']
+			else:
+				return [adj_cell(cp,'R'),'R']
+	else:
+		if cp[1] == 0:
+			if adj_value(cp,'D') > adj_value(cp,'U') and adj_value(cp,'D') > adj_value(cp,'R'):
+				return [adj_cell(cp,'D'),'D']
+			elif adj_value(cp,'U') > adj_value(cp,'D') and adj_value(cp,'U') > adj_value(cp,'R'):
+				return [adj_cell(cp,'U'),'U']
+			else:
+				return [adj_cell(cp,'R'),'R']
+		elif cp[1] == size-1:
+			if adj_value(cp,'L') > adj_value(cp,'U') and adj_value(cp,'L') > adj_value(cp,'D'):
+				return [adj_cell(cp,'L'),'L']
+			elif adj_value(cp,'U') > adj_value(cp,'L') and adj_value(cp,'U') > adj_value(cp,'D'):
+				return [adj_cell(cp,'U'),'U']
+			else:
+				return [adj_cell(cp,'D'),'D']			
+		else:
+			if adj_value(cp,'L')>adj_value(cp,'U') and adj_value(cp,'L')>adj_value(cp,'R') and adj_value(cp,'L')>adj_value(cp,'D'):
+				return [adj_cell(cp,'L'),'L']
+			elif adj_value(cp,'U')>adj_value(cp,'L') and adj_value(cp,'U')>adj_value(cp,'R') and adj_value(cp,'U')>adj_value(cp,'D'):
+				return [adj_cell(cp,'U'),'U']
+			elif adj_value(cp,'R')>adj_value(cp,'L') and adj_value(cp,'R')>adj_value(cp,'U') and adj_value(cp,'R')>adj_value(cp,'D'):
+				return [adj_cell(cp,'R'),'R']
+			else:
+				return [adj_cell(cp,'D'),'D']
+
+calc_prob()
+win = False
+while not win:
+	show_board()
+	target = get_target()
+	print("Shoot at ",[target[0]+1,target[1]+1])
+	print("Input status [0. hit, 1. miss]", end=' ')
+	status_hit = input()
+	if status_hit == '0':
+		status_sunk = '3'
+		while status_sunk != '2':
+			board[target[0]][target[1]] = -1
+			calc_prob()
+			print('Destroy mode active')
+			
+			
+			target = get_target_adj(target)
+			print("Shoot at ",[target[0]+1,target[1]+1])
+			print("Input status [2. sunk, 3. not sunk]", end=' ')
+			status_sunk = input()
+	else:
+		board[target[0]][target[1]] = -1
+		calc_prob()

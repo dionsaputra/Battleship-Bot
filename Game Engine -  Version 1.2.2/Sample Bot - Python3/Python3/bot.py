@@ -9,7 +9,6 @@ game_state_file = "state.json"
 output_path = '.'
 map_size = 0
 
-
 def main(player_key):
     global map_size
     # Retrieve current game state
@@ -33,7 +32,7 @@ def output_shot(x, y):
 def fire_shot(opponent_map):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
-    #  code 1 is your choice)
+    # code 1 is your choice)
     targets = []
     for cell in opponent_map:
         if not cell['Damaged'] and not cell['Missed']:

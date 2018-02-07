@@ -1,9 +1,0 @@
-
-05-02-2018 16:54:06:398 - I: 	Executing process python.exe "" B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 16-54-02-861\Phase 1 - Round 0\B"
-05-02-2018 16:54:06:613 - I: 	Bot calibration complete and can run an additional 206ms due to environment startup
-05-02-2018 16:54:06:613 - D: 	Executing bot with following commands python.exe "bot.py" B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 16-54-02-861\Phase 1 - Round 0\B"
-05-02-2018 16:54:06:613 - I: 	Executing process python.exe "bot.py" B "C:\Users\Dion Saputra\Documents\GitHub\Battleship-Bot\Game Engine -  Version 1.2.2\Game Engine\Replays\2018-02-05 16-54-02-861\Phase 1 - Round 0\B"
-05-02-2018 16:54:06:682 - I: 	Bot has 4000ms to run before it will be forcefully killed
-05-02-2018 16:54:06:867 - I: 	Output from bot: 
-05-02-2018 16:54:06:867 - E: 	Output from bot: 
-05-02-2018 16:54:06:867 - I: 	Your bots total execution time was 00:00:00.2486239
