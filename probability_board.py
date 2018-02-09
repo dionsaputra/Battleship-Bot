@@ -34,7 +34,7 @@ def fill_prob(ship,pos,start,end,hor):
 def calc_prob():
 	for i in range(size):
 		for j in range(size):
-			if board[i][j] != -1:
+			if board[i][j] > 0:
 				board[i][j] = 0	
 
 	# arah horizontal
@@ -91,88 +91,71 @@ def adj_value(cp,direction):
 	else:
 		return board[cp[0]+1][cp[1]]
 
-def get_target_adj(cp): # cp adalah current point
-	if cp[0] == 0:
-		if cp[1] == 0:
-			if adj_value(cp,'D') > adj_value(cp,'R'):
-				return [adj_cell(cp,'D'),'D']
-			else:
-				return [adj_cell(cp,'R'),'R']
-		elif curPoint[1] == size-1:
-			if adj_value(cp,'L') > adj_value(cp,'D'):
-				return [adj_cell(cp,'L'),'L']
-			else:
-				return [adj_cell(cp,'D'),'D']
-		else:
-			if adj_value(cp,'L') > adj_value(cp,'D') and adj_value(cp,'L') > adj_value(cp,'R'):
-				return [adj_cell(cp,'L'),'L']
-			elif adj_value(cp,'D') > adj_value(cp,'L') and adj_value(cp,'D') > adj_value(cp,'R'):
-				return [adj_cell(cp,'D'),'D']
-			else:
-				return [adj_cell(cp,'R'),'R']
-	elif cp[0] == size-1:
-		if cp[1] == 0:
-			if adj_value(cp,'U') > adj_value(cp,'R'):
-				return [adj_cell(cp,'U'),'U']
-			else:
-				return [adj_cell(cp,'R'),'R']
-		elif cp[1] == size-1:
-			if adj_value(cp,'U') > adj_value(cp,'L'):
-				return [adj_cell(cp,'U'),'U']
-			else:
-				return [adj_cell(cp,'L'),'L']
-		else:
-			if adj_value(cp,'L') > adj_value(cp,'U') and adj_value(cp,'L') > adj_value(cp,'R'):
-				return [adj_cell(cp,'L'),'L']
-			elif adj_value(cp,'U') > adj_value(cp,'L') and adj_value(cp,'U') > adj_value(cp,'R'):
-				return [adj_cell(cp,'U'),'U']
-			else:
-				return [adj_cell(cp,'R'),'R']
-	else:
-		if cp[1] == 0:
-			if adj_value(cp,'D') > adj_value(cp,'U') and adj_value(cp,'D') > adj_value(cp,'R'):
-				return [adj_cell(cp,'D'),'D']
-			elif adj_value(cp,'U') > adj_value(cp,'D') and adj_value(cp,'U') > adj_value(cp,'R'):
-				return [adj_cell(cp,'U'),'U']
-			else:
-				return [adj_cell(cp,'R'),'R']
-		elif cp[1] == size-1:
-			if adj_value(cp,'L') > adj_value(cp,'U') and adj_value(cp,'L') > adj_value(cp,'D'):
-				return [adj_cell(cp,'L'),'L']
-			elif adj_value(cp,'U') > adj_value(cp,'L') and adj_value(cp,'U') > adj_value(cp,'D'):
-				return [adj_cell(cp,'U'),'U']
-			else:
-				return [adj_cell(cp,'D'),'D']			
-		else:
-			if adj_value(cp,'L')>adj_value(cp,'U') and adj_value(cp,'L')>adj_value(cp,'R') and adj_value(cp,'L')>adj_value(cp,'D'):
-				return [adj_cell(cp,'L'),'L']
-			elif adj_value(cp,'U')>adj_value(cp,'L') and adj_value(cp,'U')>adj_value(cp,'R') and adj_value(cp,'U')>adj_value(cp,'D'):
-				return [adj_cell(cp,'U'),'U']
-			elif adj_value(cp,'R')>adj_value(cp,'L') and adj_value(cp,'R')>adj_value(cp,'U') and adj_value(cp,'R')>adj_value(cp,'D'):
-				return [adj_cell(cp,'R'),'R']
-			else:
-				return [adj_cell(cp,'D'),'D']
+def get_direction(cp): # cp adalah current point
+	if cp[1] > 0 and adj_value(cp,'L') > 0:
+		return 'L'
+	elif cp[0] > 0 and adj_value(cp,'U') > 0:
+		return 'U'
+	elif cp[1] < size-1 and adj_value(cp,'R') > 0:
+		return 'R'
+	elif cp[0] < size-1 and adj_value(cp,'D') > 0:
+		return 'D'
 
+# INI BOARD
 calc_prob()
-win = False
-while not win:
+show_board()
+win_state = 'N'
+stackHitPoint = []
+
+# WIN == NO
+while win_state != 'Y':
+	calc_prob()
 	show_board()
 	target = get_target()
 	print("Shoot at ",[target[0]+1,target[1]+1])
-	print("Input status [0. hit, 1. miss]", end=' ')
+	board[target[0]][target[1]] = -1
+
+	print("Hit? [Y/N]")
 	status_hit = input()
-	if status_hit == '0':
-		status_sunk = '3'
-		while status_sunk != '2':
-			board[target[0]][target[1]] = -1
-			calc_prob()
-			print('Destroy mode active')
-			
-			
-			target = get_target_adj(target)
-			print("Shoot at ",[target[0]+1,target[1]+1])
-			print("Input status [2. sunk, 3. not sunk]", end=' ')
-			status_sunk = input()
-	else:
-		board[target[0]][target[1]] = -1
+
+	if status_hit == 'Y':
 		calc_prob()
+		show_board()
+		
+		sunk_all_hit = False
+		change_direction = False
+		cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
+		while not sunk_all_hit:
+			status_hit_dest = 'Y'
+			if change_direction:
+				cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
+
+			while status_hit_dest == 'Y':
+				stackHitPoint.append(target)
+				cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
+			
+				target = adj_cell(stackHitPoint[len(stackHitPoint)-1],cur_direction)
+				print("Shoot at ",[target[0]+1,target[1]+1])
+				board[target[0]][target[1]] = -1
+
+				print("Hit? [Y/N]")
+				status_hit_dest = input()
+
+				print("Sunk particular? [Y/N]")
+				sunk_particular = input()
+
+				if sunk_particular == 'Y':
+					print("Legth of sunk ship? ")
+					sunk_length = int(input())
+					x = []
+					for i in range(sunk_length):
+						x = stackHitPoint.pop()
+					change_direction = True
+				else:
+					change_direction = False
+
+			if len(stackHitPoint) == 0:
+				sunk_all_hit = True
+			
+	print('Win? [Y/N]: ',end='')
+	win_state = input()
