@@ -12,7 +12,7 @@ def show_board():
 	for i in range(size):
 		for j in range(size):
 			if board[i][j] == -1:
-				print('   ',end=' ')
+				print('  ',end=' ')
 			else:
 				val = str(board[i][j])
 				if len(val) == 1:
@@ -92,70 +92,158 @@ def adj_value(cp,direction):
 		return board[cp[0]+1][cp[1]]
 
 def get_direction(cp): # cp adalah current point
-	if cp[1] > 0 and adj_value(cp,'L') > 0:
-		return 'L'
-	elif cp[0] > 0 and adj_value(cp,'U') > 0:
-		return 'U'
-	elif cp[1] < size-1 and adj_value(cp,'R') > 0:
-		return 'R'
-	elif cp[0] < size-1 and adj_value(cp,'D') > 0:
-		return 'D'
+	if cp[0] > 0 and cp[0] < size-1 and cp[1] > 0 and cp[1] < size-1:
+		if adj_value(cp,'L') > 0:
+			return 'L'
+		elif adj_value(cp,'U') > 0:
+			return 'U'
+		elif adj_value(cp,'R') > 0:
+			return 'R'
+		elif adj_value(cp,'D') > 0:
+			return 'D'
+		else:
+			return 'E'
+	else:
+		if cp[0] == 0 and cp[1] == 0:
+			if adj_value(cp,'R') > 0:
+				return 'R'
+			elif adj_value(cp,'D') > 0:
+				return 'D'
+			else:
+				return 'E'
+		elif cp[0] == 0 and cp[1] == size-1:
+			if adj_value(cp,'L') > 0:
+				return 'L'
+			elif adj_value(cp,'D') > 0:
+				return 'D'
+			else:
+				return 'E'
+		elif cp[0] == size-1 and cp[1] == 0:
+			if adj_value(cp,'U') > 0:
+				return 'U'
+			elif adj_value(cp,'R') > 0:
+				return 'R'
+			else:
+				return 'E'
+		elif cp[0] == size-1 and cp[1] == size-1:
+			if adj_value(cp,'U') > 0:
+				return 'U'
+			elif adj_value(cp,'L') > 0:
+				return 'L'
+			else:
+				return 'E'
+		elif cp[0] == 0:
+			if adj_value(cp,'L') > 0:
+				return 'L'
+			elif adj_value(cp,'R') > 0:
+				return 'R'
+			elif adj_value(cp,'D') > 0:
+				return 'D'
+			else:
+				return 'E'
+		elif cp[0] == size-1:
+			if adj_value(cp,'L') > 0:
+				return 'L'
+			elif adj_value(cp,'U') > 0:
+				return 'U'
+			elif adj_value(cp,'R') > 0:
+				return 'R'
+			else:
+				return 'E'
+		elif cp[1] == 0:
+			print('case ini loh')
+			if adj_value(cp,'U') > 0:
+				return 'U'
+			elif adj_value(cp,'R') > 0:
+				return 'R'
+			elif adj_value(cp,'D') > 0:
+				return 'D'
+			else:
+				return 'E'
+		elif cp[1] == size-1:
+			if adj_value(cp,'L') > 0:
+				return 'L'
+			elif adj_value(cp,'U') > 0:
+				return 'U'
+			elif adj_value(cp,'D') > 0:
+				return 'D'
+			else:
+				return 'E'
+		else:
+			return 'E'
 
-# INI BOARD
+def valid_cell (cp):
+	return cp[0] >= 0 and cp[1] >= 0 and cp[0] < size and cp[1] < size
+
+win = False
 calc_prob()
 show_board()
-win_state = 'N'
-stackHitPoint = []
-
-# WIN == NO
-while win_state != 'Y':
-	calc_prob()
-	show_board()
-	target = get_target()
-	print("Shoot at ",[target[0]+1,target[1]+1])
-	board[target[0]][target[1]] = -1
-
-	print("Hit? [Y/N]")
-	status_hit = input()
-
-	if status_hit == 'Y':
+stack_hits = []
+while not win:
+	found = False
+	while not found:
+		target = get_target()
+		print('Shoot at ',target[0]+1,target[1]+1)
+		board[target[0]][target[1]] = -1
 		calc_prob()
 		show_board()
-		
-		sunk_all_hit = False
-		change_direction = False
-		cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
-		while not sunk_all_hit:
-			status_hit_dest = 'Y'
-			if change_direction:
-				cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
 
-			while status_hit_dest == 'Y':
-				stackHitPoint.append(target)
-				cur_direction = get_direction(stackHitPoint[len(stackHitPoint)-1])
-			
-				target = adj_cell(stackHitPoint[len(stackHitPoint)-1],cur_direction)
-				print("Shoot at ",[target[0]+1,target[1]+1])
+
+		print('Found new ships? [Y/N]',end=' ') 
+		inp_found = input()
+		if inp_found == 'Y':
+			found = True
+
+	sunk_all_hits = False
+	cposidx = -1
+	while not sunk_all_hits:
+		stack_hits.append(target)
+		cposidx += 1
+		sunk_one = False
+
+		while not sunk_one:
+			startidx = cposidx
+			direction = get_direction(stack_hits[cposidx])
+
+			while direction != 'E' and len(stack_hits)>0 and  valid_cell(adj_cell(stack_hits[cposidx],direction)):
+				target = adj_cell(stack_hits[cposidx],direction)
+				print('Shoot at ',target[0]+1,target[1]+1)
 				board[target[0]][target[1]] = -1
+				calc_prob()
+				show_board()
 
-				print("Hit? [Y/N]")
-				status_hit_dest = input()
+				print('Hit a ships? [Y/N]',end=' ') 
+				inp_hit = input()
+				if inp_hit == 'Y':
+					stack_hits.append(target)
+					cposidx += 1	
 
-				print("Sunk particular? [Y/N]")
-				sunk_particular = input()
+					print('Sunk one ship? [Y/N]',end=' ')
+					inp_sunk_one = input()
+					if inp_sunk_one == 'Y':
+						sunk_one = True
+						print('Ship length? ')
+						inp_length = int(input())
 
-				if sunk_particular == 'Y':
-					print("Legth of sunk ship? ")
-					sunk_length = int(input())
-					x = []
-					for i in range(sunk_length):
-						x = stackHitPoint.pop()
-					change_direction = True
+						for i in range(inp_length):
+							x = stack_hits.pop()
+							cposidx -= 1
+							
 				else:
-					change_direction = False
+					print('Case not hit ',stack_hits, stack_hits[cposidx], direction)
+					direction = get_direction(stack_hits[cposidx])
 
-			if len(stackHitPoint) == 0:
-				sunk_all_hit = True
-			
-	print('Win? [Y/N]: ',end='')
-	win_state = input()
+				#print('Case not sunk_one ',stack_hits, stack_hits[cposidx], direction)
+
+			cposidx = startidx
+			#print('Direction = E',stack_hits, stack_hits[cposidx], direction)
+
+		#print('Case not sunk all hit ',stack_hits, stack_hits[cposidx], direction)
+		if len(stack_hits) == 0:
+			sunk_all_hits = True
+
+	print(stack_hits)
+	print('Win? [Y/N]',end=' ') 
+	inp_win = input()
+	if inp_win == 'Y':
+		win = True
