@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-from random import randint
+from random import choice
 
 command_file = "command.txt"
 place_ship_file = "place.txt"
@@ -9,28 +9,9 @@ game_state_file = "state.json"
 output_path = '.'
 map_size = 0
 
-def main(player_key):
-    global map_size
-    # Retrieve current game state
-    with open(os.path.join(output_path, game_state_file), 'r') as f_in:
-        state = json.load(f_in)
-    map_size = state['MapDimension']
-    opponent_map = state['OpponentMap']['Cells']
-    opponent_ships = state['OpponentMap']['Ships']
+####################### FUNGSI PENGHITUNG PROBABILITAS  #########################
 
-    if state['Phase'] == 1:
-        place_ships()
-    else:
-        fire_shot(opponent_map,opponent_ships)
-
-
-def output_shot(x, y):
-    move = 1  # 1=fire shot command code
-    with open(os.path.join(output_path, command_file), 'w') as f_out:
-        f_out.write('{},{},{}'.format(move, x, y))
-        f_out.write('\n')
-    pass
-
+# input tipe kapal, otput panjang kapal dengan tipe tersebut
 def ship_length(ship_type):
     if ship_type == "Submarine":
         return 3
@@ -43,7 +24,15 @@ def ship_length(ship_type):
     elif ship_type == "Carrier":
         return 3
 
+# mendapatkan ukuran kapal terpanjang dalam list kapal
+def get_max_length_ship(opponent_ships):
+    max_length = 0
+    for ship in opponent_ships:
+        if ship_length(ship['ShipType']) > max_length:
+            max_length = ship_length(ship['ShipType'])
+    return max_length
 
+# true jika state sekarang adalah state hunting
 def huntingMode(opponent_map,opponent_ships):
     totalStar = 0
     for cell in opponent_map:
@@ -56,14 +45,7 @@ def huntingMode(opponent_map,opponent_ships):
 
     return totalStar == 17 - totalShipLength
 
-def get_last_hit(opponent_map):
-    cur_cell_idx = (map_size*map_size) - 1
-    
-    while cur_cell_idx >= 0 and not opponent_map[cur_cell_idx]['Damaged']:
-        cur_cell_idx -= 1
-
-    return opponent_map[cur_cell_idx]
-
+# mengisi sebuah space (row atau column) dengan nilai probabilitasnya
 def fill_probability(board,ship,orient_const,start,end,orient_stat):
     cur_ship_length = ship_length(ship['ShipType'])
     if end-start+1 >= cur_ship_length:
@@ -74,15 +56,8 @@ def fill_probability(board,ship,orient_const,start,end,orient_stat):
                 elif orient_stat == "vertical" and board[i+j][orient_const] >= 0:
                     board[i+j][orient_const] += 1
 
-def get_max_length_ship(opponent_ships):
-    max_length = 0
-    for ship in opponent_ships:
-        if ship_length(ship['ShipType']) > max_length:
-            max_length = ship_length(ship['ShipType'])
-    return max_length
-
+# menhitung matriks kerapatan peluang
 def calculate_probability(board,mode,opponent_map,opponent_ships):
-
     if mode == "hunting":
         for cell in opponent_map:
             if cell['Damaged'] or cell['Missed']:
@@ -154,18 +129,27 @@ def calculate_probability(board,mode,opponent_map,opponent_ships):
 
     return board
 
+# mendapatkan cell dengan probabilitas tertinggi
 def get_target(board,opponent_map):
-    maxRow = 0
-    maxCol = 0
+    maxval = 0
     for i in range(map_size):
         for j in range(map_size):
             idxcell = i*map_size + j
-            if board[i][j] > board[maxRow][maxCol] and not opponent_map[idxcell]['Damaged']:
-                maxRow = i
-                maxCol = j
+            if board[i][j] > maxval and not opponent_map[idxcell]['Damaged']:
+                maxval = board[i][j]
 
-    return maxRow,maxCol
+    targets = []
+    for i in range(map_size):
+        for j in range(map_size):
+            idxcell = i*map_size + j
+            if board[i][j] == maxval and not opponent_map[idxcell]['Damaged']:
+                valid_cell = [i,j]
+                targets.append(valid_cell)
 
+    target = choice(targets)
+    return target
+
+# menampilkan matriks kerapatan peluang
 def show_board(board):
     for i in range(map_size):
         for j in range(map_size):
@@ -180,7 +164,118 @@ def show_board(board):
         print()
     print()
 
-def fire_shot(opponent_map,opponent_ships):
+
+####################### PENGATURAN SENJATA    #########################
+
+# membuat list objek weapon
+def weaponAvailable(ourShips):
+    weapon = []
+    data = ourShips[0]['Weapons'][0]
+    data["Destroyed"] = ourShips[0]["Destroyed"]
+    weapon.append(data)
+
+    for ships in ourShips:
+        data = ships['Weapons'][1]
+        data["Destroyed"] = ships["Destroyed"]
+        weapon.append(data)
+
+    return weapon
+
+def weapon_energy(weapon_type):
+    if weapon_type == 'DoubleShot':
+        scale = 8
+    elif weapon_type == 'CornerShot':
+        scale = 10
+    elif weapon_type == 'DiagonalCrossShot':
+        scale = 12
+    elif weapon_type == 'CrossShot':
+        scale = 14
+    elif weapon_type == 'SeekerMissile':
+        scale = 10
+    return scale * (1 + (map_size/4))
+
+def check_energy(energy,weapon_type):
+    return energy >= weapon_energy(weapon_type)
+
+def spesific_weapon_available(weapons,weapon_type):
+    for weapon in weapons:
+        if weapon['WeaponType'] == weapon_type:
+            return True
+    return False
+
+def move_code(weapon_type):
+    if weapon_type == 'DoubleShot':
+        return 2
+    elif weapon_type == 'CornerShot':
+        return 4
+    elif weapon_type == 'DiagonalCrossShot':
+        return 5
+    elif weapon_type == 'CrossShot':
+        return 6
+    elif weapon_type == 'SeekerMissile':
+        return 7
+
+# memilih senjata
+def chooseWeapon(ourShips,energy,mode):
+    weapons = weaponAvailable(ourShips)
+    weapon_choose = 0 
+    if mode == 'hunting':
+        hunting_prior = ['SeekerMissile','DiagonalCrossShot','CornerShot','CrossShot','DoubleShot']
+        for weapon_type in hunting_prior:
+            if spesific_weapon_available(weapons,weapon_type) and check_energy(energy,weapon_type):
+                weapon_choose = move_code(weapon_type)
+                break
+    elif mode == 'destroy':
+        hunting_prior = ['SeekerMissile','DiagonalCrossShot','CornerShot','CrossShot','DoubleShot']
+        for weapon_type in hunting_prior:
+            if spesific_weapon_available(weapons,weapon_type) and check_energy(energy,weapon_type):
+                weapon_choose = move_code(weapon_type)
+                break
+
+
+    for i in range(len(weapon)-1, -1, -1):
+        if (weapon[i]["Destroyed"] == False):
+            if (energy >= weapon[i]["EnergyRequired"]):
+                if (weapon[i]["WeaponType"] == "SingleShot"):
+                    return 1
+                elif (weapon[i]["WeaponType"] == "DoubleShot"):
+                    return 2
+                elif (weapon[i]["WeaponType"] == "CornerShot"):
+                    return 3
+                elif (weapon[i]["WeaponType"] == "DiagonalCrossShot"):
+                    return 4
+                elif (weapon[i]["WeaponType"] == "CrossShot"):
+                    return 5
+                elif (weapon[i]["WeaponType"] == "SeekerMissile"):
+                    return 6
+    return 0
+
+####################### PROGRAM UTAMA DARI BOT  #########################
+def main(player_key):
+    global map_size
+    # Retrieve current game state
+    with open(os.path.join(output_path, game_state_file), 'r') as f_in:
+        state = json.load(f_in)
+    
+    map_size = state['MapDimension']
+    opponent_map = state['OpponentMap']['Cells']
+    opponent_ships = state['OpponentMap']['Ships']
+    ourShips = state['PlayerMap']['Owner']['Ships']
+    energy = state['PlayerMap']['Owner']["Energy"]
+
+    if state['Phase'] == 1:
+        place_ships()
+    else:
+        fire_shot(opponent_map,opponent_ships,ourShips,energy)
+
+def output_shot(x, y,ourShips,energy):
+    move = chooseWeapon(ourShips,energy)  # 1=fire shot command code
+    with open(os.path.join(output_path, command_file), 'w') as f_out:
+        f_out.write('{},{},{}'.format(move, x, y))
+        f_out.write('\n')
+    pass
+
+def fire_shot(opponent_map,opponent_ships,ourShips,energy):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
@@ -192,10 +287,8 @@ def fire_shot(opponent_map,opponent_ships):
     else: # in destroy mode
         board = calculate_probability(board,"destroy",opponent_map,opponent_ships)                
 
-    show_board(board)
     target = get_target(board,opponent_map)
-    print(target)
-    output_shot(*target)
+    output_shot(target[0],target[1],ourShips,energy)
     return
 
 def place_ships():

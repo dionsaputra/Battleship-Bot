@@ -2,13 +2,17 @@
 ourShips = []
 Energy = 0
 
+output_path = '.'
+
 # tambahin ke main
 def main():
     global ourShips, energy
-
+    with open(os.path.join(output_path, 'state.json'), 'r') as f_in:
+        state = json.load(f_in)
+    
     ourShips = state['PlayerMap']['Owner']['Ships']
     energy = state['PlayerMap']['Owner']["Energy"]
-    print("Chosen weapon : ",chooseWeapon(100))
+    
 
 # membuat list objek weapon
 def weaponAvailable():
@@ -53,3 +57,6 @@ def output_shot(x, y):
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
     pass
+
+if __name__ == '__main__':
+	print("Chosen weapon : ",chooseWeapon(100))
