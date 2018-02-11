@@ -8,7 +8,7 @@ def main():
 
     ourShips = state['PlayerMap']['Owner']['Ships']
     energy = int(state['PlayerMap']['Owner']["Energy"])
-    print("Chosen weapon : ",chooseWeapon(100))
+    print("Chosen weapon : ",chooseWeapon(100, 2, 3))
 
 # membuat list objek weapon
 def weaponAvailable():
