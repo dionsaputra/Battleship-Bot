@@ -166,7 +166,6 @@ def show_board(board):
 
 
 ####################### PENGATURAN SENJATA    #########################
-
 # membuat list objek weapon
 def weaponAvailable(ourShips):
     weapon = []
@@ -215,10 +214,9 @@ def move_code(weapon_type):
     elif weapon_type == 'SeekerMissile':
         return 7
 
-# memilih senjata
 def chooseWeapon(ourShips,energy,mode):
     weapons = weaponAvailable(ourShips)
-    weapon_choose = 0 
+    weapon_choose = 1
     if mode == 'hunting':
         hunting_prior = ['SeekerMissile','DiagonalCrossShot','CornerShot','CrossShot','DoubleShot']
         for weapon_type in hunting_prior:
@@ -226,29 +224,158 @@ def chooseWeapon(ourShips,energy,mode):
                 weapon_choose = move_code(weapon_type)
                 break
     elif mode == 'destroy':
-        hunting_prior = ['SeekerMissile','DiagonalCrossShot','CornerShot','CrossShot','DoubleShot']
-        for weapon_type in hunting_prior:
+        destroy_prior = ['CrossShot','DiagonalCrossShot','CornerShot','DoubleShot','SeekerMissile']
+        for weapon_type in destroy_prior:
             if spesific_weapon_available(weapons,weapon_type) and check_energy(energy,weapon_type):
                 weapon_choose = move_code(weapon_type)
                 break
 
+    return weapon_choose
 
-    for i in range(len(weapon)-1, -1, -1):
-        if (weapon[i]["Destroyed"] == False):
-            if (energy >= weapon[i]["EnergyRequired"]):
-                if (weapon[i]["WeaponType"] == "SingleShot"):
-                    return 1
-                elif (weapon[i]["WeaponType"] == "DoubleShot"):
-                    return 2
-                elif (weapon[i]["WeaponType"] == "CornerShot"):
-                    return 3
-                elif (weapon[i]["WeaponType"] == "DiagonalCrossShot"):
-                    return 4
-                elif (weapon[i]["WeaponType"] == "CrossShot"):
-                    return 5
-                elif (weapon[i]["WeaponType"] == "SeekerMissile"):
-                    return 6
-    return 0
+def adj_cell(cp,direction):
+    if direction == 'L':
+        return [cp[0],cp[1]-1]
+    elif direction == 'U':
+        return [cp[0]-1,cp[1]]
+    elif direction == 'R':
+        return [cp[0],cp[1]+1]
+    else:
+        return [cp[0]+1,cp[1]]
+
+def adj_value(board,cp,direction):
+    if direction == 'L':
+        return board[cp[0]][cp[1]-1]
+    elif direction == 'U':
+        return board[cp[0]-1][cp[1]]
+    elif direction == 'R':
+        return board[cp[0]][cp[1]+1]
+    else:
+        return board[cp[0]+1][cp[1]]
+
+def valid_config(move_code,target,no_conf):
+    if move_code == 2:
+        if no_conf == 1:
+            return target[1] >= 2
+        elif no_conf == 2:
+            return target[1] <= map_size-3
+    elif move_code == 3:
+        if no_conf == 1:
+            return target[0] >= 2
+        elif no_conf == 2:
+            return target[0] <= map_size-3
+    elif move_code == 4:
+        if no_conf == 1:
+            return target[0] >= 2 and target[1] >= 2
+        elif no_conf == 2:
+            return target[0] >= 2 and target[1] <= map_size-3
+        elif no_conf == 3:
+            return target[0] <= map_size-3 and target[1] <= map_size-3
+        elif no_conf == 4:
+            return target[0] <= map_size-3 and target[1] >= 2
+    elif move_code == 5:
+        if no_conf == 1:
+            return target[0] >= 2 and target[1] >= 2
+        elif no_conf == 2:
+            return target[0] >= 2 and target[1] <= map_size-3
+        elif no_conf == 3:
+            return target[0] <= map_size-3 and target[1] <= map_size-3
+        elif no_conf == 4:
+            return target[0] <= map_size-3 and target[1] >= 2
+        elif no_conf == 5:
+            return target[0] >= 1 and target[0] <= map_size-2 and target[1] >= 1 and target[1] <= map_size-2
+    elif move_code == 6:
+        if no_conf == 1:
+            return target[0] >= 2 and target[1] >= 1 and target[1] <= map_size-2
+        elif no_conf == 2:
+            return target[1] <= map_size-3 and target[0] >= 1 and target[0] <= map_size-2
+        elif no_conf == 3:
+            return target[0] <= map_size-3 and target[1] >= 1 and target[1] <= map_size-2
+        elif no_conf == 4:
+            return target[1] >= 2 and target[0] >= 1 and target[0] <= map_size-2
+        elif no_conf == 5:
+            return target[0] >= 1 and target[0] <= map_size-2 and target[1] >= 1 and target[1] <= map_size-2
+    elif move_code == 7:
+        return True
+
+def is_max_4_value(testee,tester1,tester2,tester3):
+    return testee >= tester1 and testee >= tester2 and testee >= tester3
+
+def is_max_5_value(testee,tester1,tester2,tester3,tester4):
+    return testee >= tester1 and testee >= tester2 and testee >= tester3 and testee >= tester4
+
+def best_config(board,move_code,target):
+    min_inf = -1000000
+    x = target[0]
+    y = target[1]
+    if move_code == 1:
+        return [move_code,[x,y]]
+    elif move_code == 2:
+        sum_conf_2_1 = board[x][y] + board[x][y-2] if valid_config(2,target,1) else min_inf
+        sum_conf_2_2 = board[x][y] + board[x][y+2] if valid_config(2,target,2) else min_inf
+        sum_conf_3_1 = board[x][y] + board[x-2][y] if valid_config(3,target,1) else min_inf
+        sum_conf_3_2 = board[x][y] + board[x+2][y] if valid_config(3,target,2) else min_inf
+
+        if is_max_4_value(sum_conf_2_1,sum_conf_2_2,sum_conf_3_1,sum_conf_3_2):
+            return [2,[x,y-1]]
+        elif is_max_4_value(sum_conf_2_2,sum_conf_2_1,sum_conf_3_1,sum_conf_3_2):
+            return [2,[x,y+1]]
+        elif is_max_4_value(sum_conf_3_1,sum_conf_2_1,sum_conf_2_2,sum_conf_3_2):
+            return [3,[x-1,y]]
+        elif is_max_4_value(sum_conf_3_2,sum_conf_2_1,sum_conf_2_2,sum_conf_3_1):
+            return [3,[x+1,y]]
+        
+    elif move_code == 4:
+        sum_conf_1 = board[x][y] + board[x-2][y-2] + board[x-2][y] + board[x][y-2] if valid_config(move_code,target,1) else min_inf
+        sum_conf_2 = board[x][y] + board[x-2][y] + board[x-2][y+2] + board[x][y+2] if valid_config(move_code,target,2) else min_inf
+        sum_conf_3 = board[x][y] + board[x][y+2] + board[x+2][y+2] + board[x+2][y] if valid_config(move_code,target,3) else min_inf
+        sum_conf_4 = board[x][y] + board[x][y-2] + board[x+2][y] + board[x+2][y-2] if valid_config(move_code,target,4) else min_inf
+
+        if is_max_4_value(sum_conf_1,sum_conf_2,sum_conf_3,sum_conf_4):
+            return [move_code,[x-1,y-1]]
+        elif is_max_4_value(sum_conf_2,sum_conf_1,sum_conf_3,sum_conf_4):
+            return [move_code,[x-1,y+1]]
+        elif is_max_4_value(sum_conf_3,sum_conf_2,sum_conf_1,sum_conf_4):
+            return [move_code,[x+1,y+1]]
+        elif is_max_4_value(sum_conf_4,sum_conf_2,sum_conf_3,sum_conf_1):
+            return [move_code,[x+1,y-1]]
+
+    elif move_code == 5:
+        sum_conf_1 = board[x][y] + board[x-2][y-2] + board[x-2][y] + board[x][y-2] + board[x-1][y-1] if valid_config(move_code,target,1) else min_inf
+        sum_conf_2 = board[x][y] + board[x-2][y] + board[x-2][y+2] + board[x][y+2] + board[x-1][y+1] if valid_config(move_code,target,2) else min_inf
+        sum_conf_3 = board[x][y] + board[x][y+2] + board[x+2][y+2] + board[x+2][y] + board[x+1][y+1] if valid_config(move_code,target,3) else min_inf
+        sum_conf_4 = board[x][y] + board[x][y-2] + board[x+2][y] + board[x+2][y-2] + board[x+1][y-1] if valid_config(move_code,target,4) else min_inf
+        sum_conf_5 = board[x][y] + board[x-1][y-1] + board[x-1][y+1] + board[x+1][y+1] + board[x+1][y-1] if valid_config(move_code,target,5) else min_inf
+
+        if is_max_5_value(sum_conf_1,sum_conf_2,sum_conf_3,sum_conf_4,sum_conf_5):
+            return [move_code,[x-1,y-1]]
+        elif is_max_5_value(sum_conf_2,sum_conf_1,sum_conf_3,sum_conf_4,sum_conf_5):
+            return [move_code,[x-1,y+1]]
+        elif is_max_5_value(sum_conf_3,sum_conf_2,sum_conf_1,sum_conf_4,sum_conf_5):
+            return [move_code,[x+1,y+1]]
+        elif is_max_5_value(sum_conf_4,sum_conf_2,sum_conf_3,sum_conf_1,sum_conf_5):
+            return [move_code,[x+1,y-1]]
+        elif is_max_5_value(sum_conf_5,sum_conf_2,sum_conf_3,sum_conf_4,sum_conf_1):
+            return [move_code,[x,y]]
+
+    elif move_code == 6:
+        sum_conf_1 = board[x][y] + board[x-2][y] + board[x-1][y-1] + board[x-1][y] + board[x-1][y+1] if valid_config(move_code,target,1) else min_inf
+        sum_conf_2 = board[x][y] + board[x-1][y+1] + board[x][y+2] + board[x][y+1] + board[x+1][y+1] if valid_config(move_code,target,2) else min_inf
+        sum_conf_3 = board[x][y] + board[x+1][y-1] + board[x+1][y] + board[x+1][y+1] + board[x+2][y] if valid_config(move_code,target,3) else min_inf
+        sum_conf_4 = board[x][y] + board[x-1][y-1] + board[x][y-2] + board[x][y-1] + board[x+1][y-1] if valid_config(move_code,target,4) else min_inf
+        sum_conf_5 = board[x][y] + board[x-1][y] + board[x][y-1] + board[x][y+1] + board[x+1][y] if valid_config(move_code,target,5) else min_inf
+
+        if is_max_5_value(sum_conf_1,sum_conf_2,sum_conf_3,sum_conf_4,sum_conf_5):
+            return [move_code,[x-1,y]]
+        elif is_max_5_value(sum_conf_2,sum_conf_1,sum_conf_3,sum_conf_4,sum_conf_5):
+            return [move_code,[x,y+1]]
+        elif is_max_5_value(sum_conf_3,sum_conf_2,sum_conf_1,sum_conf_4,sum_conf_5):
+            return [move_code,[x+1,y]]
+        elif is_max_5_value(sum_conf_4,sum_conf_2,sum_conf_3,sum_conf_1,sum_conf_5):
+            return [move_code,[x,y-1]]
+        elif is_max_5_value(sum_conf_5,sum_conf_2,sum_conf_3,sum_conf_4,sum_conf_1):
+            return [move_code,[x,y]]
+    elif move_code == 7:
+        return [move_code,[x,y]]
 
 ####################### PROGRAM UTAMA DARI BOT  #########################
 def main(player_key):
@@ -268,8 +395,7 @@ def main(player_key):
     else:
         fire_shot(opponent_map,opponent_ships,ourShips,energy)
 
-def output_shot(x, y,ourShips,energy):
-    move = chooseWeapon(ourShips,energy)  # 1=fire shot command code
+def output_shot(move,x,y):
     with open(os.path.join(output_path, command_file), 'w') as f_out:
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
@@ -284,11 +410,14 @@ def fire_shot(opponent_map,opponent_ships,ourShips,energy):
     
     if huntingMode(opponent_map,opponent_ships):
         board = calculate_probability(board,"hunting",opponent_map,opponent_ships)
+        move = chooseWeapon(ourShips,energy,"hunting")
     else: # in destroy mode
         board = calculate_probability(board,"destroy",opponent_map,opponent_ships)                
+        move = chooseWeapon(ourShips,energy,"destroy")
 
     target = get_target(board,opponent_map)
-    output_shot(target[0],target[1],ourShips,energy)
+    take_config = best_config(board,move,target)
+    output_shot(take_config[0],take_config[1][0],take_config[1][1])
     return
 
 def place_ships():
