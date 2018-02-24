@@ -44,7 +44,7 @@ def huntingMode(opponent_map,opponent_ships):
     for ship in opponent_ships:
         totalShipLength += ship_length(ship['ShipType'])
 
-    return totalStar == 17 - totalShipLength
+    return totalStar == (17 - totalShipLength)
 
 # mengisi sebuah space (row atau column) dengan nilai probabilitasnya
 def fill_probability(board,ship,orient_const,start,end,orient_stat):
@@ -59,6 +59,7 @@ def fill_probability(board,ship,orient_const,start,end,orient_stat):
 
 # menhitung matriks kerapatan peluang
 def calculate_probability(board,mode,opponent_map,opponent_ships):
+    # menghitung kerapatan peluang dalam mode hunting
     if mode == "hunting":
         for cell in opponent_map:
             if cell['Damaged'] or cell['Missed']:
@@ -88,7 +89,7 @@ def calculate_probability(board,mode,opponent_map,opponent_ships):
                     fill_probability(board,ship,i,j,end,"vertical")
                 j = end+2
 
-    else: # mode == "destroy"
+    else: # menghitung kerapatan peluang dalam mode destroy
         max_length = get_max_length_ship(opponent_ships)
         for cell in opponent_map:
             if cell['Missed']:
@@ -167,7 +168,7 @@ def show_board(board):
 
 
 ####################### PENGATURAN SENJATA    #########################
-# membuat list objek weapon
+# membuat list objek weapon yang masih ada
 def weaponAvailable(ourShips):
     weapon = []
     data = ourShips[0]['Weapons'][0]
@@ -182,6 +183,7 @@ def weaponAvailable(ourShips):
 
     return weapon
 
+# mengembalikan jumlah energi yang dibutuhkan weapon tertentu
 def weapon_energy(weapon_type):
     if weapon_type == 'DoubleShot':
         scale = 8
@@ -195,15 +197,18 @@ def weapon_energy(weapon_type):
         scale = 10
     return scale * (1 + (map_size/4))
 
+# mengecek energi apakah sudah bisa menggunakan weapon 
 def check_energy(energy,weapon_type):
     return (energy >= 14*(1+ map_size/4)) and (energy >= weapon_energy(weapon_type))
 
+# mengecek apakah weapon dengan tipe tertentu masih dimiliki
 def spesific_weapon_available(weapons,weapon_type):
     for weapon in weapons:
         if weapon['WeaponType'] == weapon_type:
             return True
     return False
 
+# mengembalikan code dari setiap weapon
 def move_code(weapon_type):
     if weapon_type == 'DoubleShot':
         return 2
@@ -216,6 +221,7 @@ def move_code(weapon_type):
     elif weapon_type == 'SeekerMissile':
         return 7
 
+# menentukan weapon yang tepat dipakai berdasarkan energi dan prioritas mode
 def chooseWeapon(ourShips,energy,mode):
     weapons = weaponAvailable(ourShips)
     weapon_choose = 1
@@ -234,26 +240,7 @@ def chooseWeapon(ourShips,energy,mode):
 
     return weapon_choose
 
-def adj_cell(cp,direction):
-    if direction == 'L':
-        return [cp[0],cp[1]-1]
-    elif direction == 'U':
-        return [cp[0]-1,cp[1]]
-    elif direction == 'R':
-        return [cp[0],cp[1]+1]
-    else:
-        return [cp[0]+1,cp[1]]
-
-def adj_value(board,cp,direction):
-    if direction == 'L':
-        return board[cp[0]][cp[1]-1]
-    elif direction == 'U':
-        return board[cp[0]-1][cp[1]]
-    elif direction == 'R':
-        return board[cp[0]][cp[1]+1]
-    else:
-        return board[cp[0]+1][cp[1]]
-
+# menentukan apakah konfigurasi dari tembakan oleh weapon tertentu valid dengan ukuran peta
 def valid_config(move_code,target,no_conf):
     if move_code == 2:
         if no_conf == 1:
@@ -299,12 +286,15 @@ def valid_config(move_code,target,no_conf):
     elif move_code == 7:
         return True
 
+# fungsi menentukan apakah merupakan maksimum 4 integer
 def is_max_4_value(testee,tester1,tester2,tester3):
     return testee >= tester1 and testee >= tester2 and testee >= tester3
 
+# fungsi menentukan apakah merupakan maksimum 5 integer
 def is_max_5_value(testee,tester1,tester2,tester3,tester4):
     return testee >= tester1 and testee >= tester2 and testee >= tester3 and testee >= tester4
 
+# menentukan konfigurasi yang paling baik untuk sebah tipe weapon dan titik target
 def best_config(board,move_code,target):
     min_inf = -1000000
     x = target[0]
@@ -391,38 +381,36 @@ def main(player_key):
     opponent_ships = state['OpponentMap']['Ships']
     ourShips = state['PlayerMap']['Owner']['Ships']
     energy = state['PlayerMap']['Owner']["Energy"]
+    our_map = state["PlayerMap"]["Cells"]
+    our_state = state['PlayerMap']['Owner']
 
     low = 0
     mid = (map_size-1)/2
     high = map_size-1
     if state['Phase'] == 1:
         place_ships()
-    elif state['Round'] == 1:
-        output_shot(1,low,low)
-    elif state['Round'] == 2:
-        output_shot(1,low,mid)
-    elif state['Round'] == 3:
-        output_shot(1,low,high)
-    elif state['Round'] == 4:
-        output_shot(1,mid,low)
-    elif state['Round'] == 5:
-        output_shot(1,mid,mid)
-    elif state['Round'] == 6:
-        output_shot(1,mid,high)
-    elif state['Round'] == 7:
-        output_shot(1,high,low)
-    elif state['Round'] == 8:
-        output_shot(1,high,mid)
     else:
-        fire_shot(opponent_map,opponent_ships,ourShips,energy)
+        fire_shot(opponent_map,opponent_ships,ourShips,energy,our_map,our_state)
 
-def output_shot(move,x,y):
+# mencari posisi kapal owner yang masih tersisa
+def searchShipRemaining(our_map):
+    for i in range(0, map_size*map_size):
+        if (our_map[i]["Occupied"] and not our_map[i]["Hit"]):
+            return (int(i/map_size), i%map_size)
+
+# perintah mencatatkan command ke comman.txt
+def output_shot(move,x,y,our_map,our_state):
+    if (our_state["ShipsRemaining"] == 1 and not our_state["Shield"]["Active"]):
+        x, y = searchShipRemaining(our_map)
+        move = 8
+    
     with open(os.path.join(output_path, command_file), 'w') as f_out:
         f_out.write('{},{},{}'.format(move, x, y))
         f_out.write('\n')
     pass
 
-def fire_shot(opponent_map,opponent_ships,ourShips,energy):
+# perintah mengeluarkan temabakan atau memasang shield
+def fire_shot(opponent_map,opponent_ships,ourShips,energy,our_map,our_state):
     # To send through a command please pass through the following <code>,<x>,<y>
     # Possible codes: 1 - Fireshot, 0 - Do Nothing (please pass through coordinates if
     #  code 1 is your choice)
@@ -438,10 +426,10 @@ def fire_shot(opponent_map,opponent_ships,ourShips,energy):
 
     target = get_target(board,opponent_map)
     take_config = best_config(board,move,target)
-    output_shot(take_config[0],take_config[1][0],take_config[1][1])
+    output_shot(take_config[0],take_config[1][0],take_config[1][1],our_map,our_state)
     return
 
-
+# membuat konfigurasi kapal untuk setiap ukuran peta
 def createConfShips(size):
     # meng-generate posisi kapal berdasarkan list yang tersedia
     confLarge = [["6 4 East", "12 6 north", "5 8 north", "3 2 East", "0 13 East"],["1 2 East","4 7 East", "0 10 East", "12 10 north", "10 2 north"],["11 8 north", "4 5 East", "1 10 north", "8 6 East", "5 0 East"],["12 8 north", "9 4 north", "5 1 East", "0 1 north", "1 7 East"], ["5 12 East", "12 0 north", "3 7 north", "1 1 East", "9 8 north"]]
@@ -453,7 +441,7 @@ def createConfShips(size):
     if (size == 7):
         useConf = confSmall[idx]
     elif (size == 10):
-        useConf = confMed[1]
+        useConf = confMed[idx]
     elif (size == 14):
         useConf = confLarge[idx]
 
@@ -465,6 +453,7 @@ def createConfShips(size):
 
     return retConf
 
+# menempatkan kapal pada peta sesuai ukuran peta
 def place_ships():
     # Please place your ships in the following format <Shipname> <x> <y> <direction>
     # Ship names: Battleship, Cruiser, Carrier, Destroyer, Submarine
@@ -478,7 +467,7 @@ def place_ships():
             f_out.write('\n')
     return
 
-
+# main program oleh bot
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('PlayerKey', nargs='?', help='Player key registered in the game')

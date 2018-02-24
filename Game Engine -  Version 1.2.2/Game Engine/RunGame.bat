@@ -1,1 +1,1 @@
-Battleships.exe -b "..\Reference Bots\FixBotv3" "..\Reference Bots\Python3" --clog --pretty
+Battleships.exe --size 1 -b "..\Reference Bots\FixBotv3" "..\Reference Bots\FixBotv3" --clog --pretty
